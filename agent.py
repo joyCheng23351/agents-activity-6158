@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Bounded Python -> Rust translation agent.
 
-Set OPENAI_API_KEY and OPENAI_MODEL, then run: python agent.py
-OPENAI_BASE_URL optionally selects a Responses-compatible API (including /v1).
-For Google Gemini, set MODEL_PROVIDER=gemini, GEMINI_API_KEY and GEMINI_MODEL.
-The agent itself uses only the Python standard library.
+Set GEMINI_API_KEY and GEMINI_MODEL, then run: python agent.py
+The agent uses Google Gemini directly and otherwise only the Python standard library.
 """
 from __future__ import annotations
 
@@ -50,8 +48,7 @@ def source_hash() -> str:
 
 
 def configured_model() -> str | None:
-    variable = "GEMINI_MODEL" if os.environ.get("MODEL_PROVIDER", "openai") == "gemini" else "OPENAI_MODEL"
-    return os.environ.get(variable)
+    return os.environ.get("GEMINI_MODEL")
 
 
 def request_json(request, key: str) -> dict:
@@ -127,49 +124,8 @@ def call_gemini(messages: list[dict], tools: list[dict]) -> dict:
 
 
 def call_model(messages: list[dict], tools: list[dict]) -> dict:
-    """One HTTP request per budgeted call; no invisible retries.
-
-    Each request is a fresh work packet with prior observations as text.
-    This avoids orphaned tool-call IDs when old turns are compressed.
-    https://developers.openai.com/api/docs/guides/function-calling
-    """
-    provider = os.environ.get("MODEL_PROVIDER", "openai")
-    if provider == "gemini":
-        return call_gemini(messages, tools)
-    if provider != "openai":
-        raise RuntimeError("MODEL_PROVIDER must be openai or gemini")
-    key, model = os.environ.get("OPENAI_API_KEY"), os.environ.get("OPENAI_MODEL")
-    if not key or not model:
-        raise RuntimeError("Set OPENAI_API_KEY and OPENAI_MODEL before running.")
-    base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-    payload = {
-        "model": model,
-        "instructions": "\n\n".join(m["content"] for m in messages if m["role"] == "system"),
-        "input": [m for m in messages if m["role"] != "system"],
-        "tools": [{"type": "function", **t, "strict": False} for t in tools],
-        "parallel_tool_calls": False, "store": False, "max_output_tokens": 12_000,
-    }
-    request = urllib.request.Request(
-        base + "/responses", data=json.dumps(payload).encode(), method="POST",
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-    )
-    data = request_json(request, key)
-    if data.get("error") or data.get("status") in {"failed", "incomplete", "cancelled"}:
-        raise RuntimeError(f"Model response was not complete: {data.get('status', 'error')}")
-    text, calls = [], []
-    for item in data.get("output", []):
-        if item.get("type") == "message":
-            text.extend(c["text"] for c in item.get("content", []) if c.get("type") == "output_text")
-        elif item.get("type") == "function_call":
-            try:
-                arguments = json.loads(item.get("arguments", "{}"))
-            except (json.JSONDecodeError, TypeError):
-                arguments = item.get("arguments")
-            calls.append({"name": item.get("name"), "arguments": arguments})
-    return {"text": "\n".join(text) or None, "tool_calls": calls,
-            "usage": data.get("usage", {}), "response_id": data.get("id"),
-            "model": data.get("model"), "requested_model": model}
-
+    """One Gemini HTTP request per budgeted call; no invisible retries."""
+    return call_gemini(messages, tools)
 
 def system_prompt() -> str:
     return """Translate the required public API of reference/version.py into
@@ -504,7 +460,7 @@ class Run:
         self.step = 0
         (self.directory / "initial.rs").write_bytes(LIB.read_bytes())
         self.record(event="start", budget=budget, task=task, model=configured_model(),
-                    provider=os.environ.get("MODEL_PROVIDER", "openai"),
+                    provider="gemini",
                     source_hash=source_hash(), schemas=SCHEMAS)
 
     def record(self, **fields):
@@ -594,11 +550,7 @@ class Run:
 
 def preflight() -> list[str]:
     problems = []
-    provider = os.environ.get("MODEL_PROVIDER", "openai")
-    if provider not in ("openai", "gemini"):
-        problems.append("MODEL_PROVIDER must be openai or gemini.")
-    required = ("GEMINI_API_KEY", "GEMINI_MODEL") if provider == "gemini" else ("OPENAI_API_KEY", "OPENAI_MODEL")
-    for name in required:
+    for name in ("GEMINI_API_KEY", "GEMINI_MODEL"):
         if not os.environ.get(name):
             problems.append(f"Set {name} in the environment.")
     if shutil.which("cargo") is None:
@@ -613,8 +565,7 @@ def preflight() -> list[str]:
 
 def load_env_file(path: pathlib.Path) -> None:
     """Read explicitly selected credentials without evaluating shell code."""
-    allowed = {"MODEL_PROVIDER", "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
-               "GEMINI_API_KEY", "GEMINI_MODEL"}
+    allowed = {"GEMINI_API_KEY", "GEMINI_MODEL"}
     for number, line in enumerate(path.read_text().splitlines(), 1):
         line = line.strip()
         if not line or line.startswith("#"):
@@ -663,7 +614,7 @@ def fresh_run(budget: int, task: str) -> int:
                 (target / "provenance.json").write_text(json.dumps({
                     "mode": "live_api_fresh_scaffold", "workspace": str(workspace),
                     "requested_model": configured_model(),
-                    "provider": os.environ.get("MODEL_PROVIDER", "openai"),
+                    "provider": "gemini",
                     "starter": "fixtures/starter_lib.rs; recreated original API and placeholders",
                 }, indent=2))
             else:
@@ -675,7 +626,7 @@ def fresh_run(budget: int, task: str) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--budget", type=int, default=40, help="maximum model calls (1..40)")
-    parser.add_argument("--model", help="model identifier; overrides the selected provider's model variable")
+    parser.add_argument("--model", help="Gemini model identifier; overrides GEMINI_MODEL")
     parser.add_argument("--env-file", type=pathlib.Path, help="read API configuration from an ignored local file")
     parser.add_argument("--fresh", action="store_true", help="start from a stub in an isolated workspace and archive the live trajectory")
     parser.add_argument("--task", default="Translate reference/version.py into rust/src/lib.rs, including meaningful Rust tests.")
@@ -689,8 +640,7 @@ def main(argv=None) -> int:
         except (OSError, ValueError) as exc:
             parser.error(str(exc))
     if args.model:
-        variable = "GEMINI_MODEL" if os.environ.get("MODEL_PROVIDER", "openai") == "gemini" else "OPENAI_MODEL"
-        os.environ[variable] = args.model
+        os.environ["GEMINI_MODEL"] = args.model
     problems = preflight()
     if problems:
         print("Setup required:\n" + "\n".join(f"  - {p}" for p in problems), file=sys.stderr)

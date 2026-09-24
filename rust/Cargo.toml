@@ -1,0 +1,17 @@
+[package]
+name    = "py2rust-semver"
+version = "0.1.0"
+edition = "2021"
+
+# No dependencies, deliberately. Everything here is std.
+
+[lib]
+name = "py2rust_semver"
+path = "src/lib.rs"
+
+[[bin]]
+name = "harness"
+path = "src/main.rs"
+
+[profile.release]
+debug = false

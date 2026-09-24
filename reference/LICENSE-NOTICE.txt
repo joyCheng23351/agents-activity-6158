@@ -1,0 +1,2 @@
+reference/ contains files from python-semver/python-semver,
+licensed BSD-3-Clause. See https://github.com/python-semver/python-semver

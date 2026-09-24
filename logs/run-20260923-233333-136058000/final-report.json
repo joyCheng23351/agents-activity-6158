@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "returncode": 0,
+  "output": "====================================================================\n  py2rust evaluation   seed=0   n=300\n====================================================================\n\n[1] cargo build            PASS\n[2] cargo test             1 passed, 0 failed\n\n[3] differential testing\n      parse valid         0/318     0.0%  \n      parse invalid     171/171   100.0%  #########################\n      compare             0/664     0.0%  \n      bump                0/954     0.0%  \n      round-trip          0/318     0.0%  \n      OVERALL           171/2425    7.1%\n      semver.org precedence chain: FAIL\n      NOTE: 'parse invalid' is near-perfect only because almost\n            nothing parses at all. It is not evidence of anything.\n\n[4] quality\n      unsafe_blocks            0\n      clone_calls              0\n      to_owned_calls           0\n      todo_macros              6   <-- VIOLATION\n      panic_macros             0\n      unwrap_calls             0\n      lines                   33\n      extra_dependencies       0\n\n--------------------------------------------------------------------\n  correctness 7.1%  --  BUT RULE VIOLATIONS: todo_macros\n  A translation that passes tests by breaking the rules has not\n  done the task. See README, 'Why correctness is not the whole score'.\n--------------------------------------------------------------------\n\nFirst failures:\n  - parse valid: parse('1.0.0-alpha') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'alpha', 'build': None}\n  - parse valid: parse('1.0.0-alpha.1') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'alpha.1', 'build': None}\n  - parse valid: parse('1.0.0-alpha.beta') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'alpha.beta', 'build': None}\n  - parse valid: parse('1.0.0-beta') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'beta', 'build': None}\n  - parse valid: parse('1.0.0-beta.2') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'beta.2', 'build': None}\n  - parse valid: parse('1.0.0-beta.11') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'beta.11', 'build': None}\n  - parse valid: parse('1.0.0-rc.1') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': 'rc.1', 'build': None}\n  - parse valid: parse('1.0.0') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': None, 'build': None}\n  - parse valid: parse('0.0.0') rejected; expected {'major': 0, 'minor': 0, 'patch': 0, 'prerelease': None, 'build': None}\n  - parse valid: parse('1.2.3') rejected; expected {'major': 1, 'minor': 2, 'patch': 3, 'prerelease': None, 'build': None}\n  - parse valid: parse('10.20.30') rejected; expected {'major': 10, 'minor': 20, 'patch': 30, 'prerelease': None, 'build': None}\n  - parse valid: parse('1.0.0+build') rejected; expected {'major': 1, 'minor': 0, 'patch': 0, 'prerelease': None, 'build': 'build'}\n\nwrote /var/folders/cl/qbnp92f56p37_1bb03g922h40000gn/T/py2rust-eval-6y8p36w8/report.json",
+  "report": {
+    "seed": 0,
+    "build": true,
+    "cargo_test": {
+      "passed": 1,
+      "failed": 0
+    },
+    "differential": {
+      "parse valid": {
+        "pass": 0,
+        "total": 318
+      },
+      "parse invalid": {
+        "pass": 171,
+        "total": 171
+      },
+      "compare": {
+        "pass": 0,
+        "total": 664
+      },
+      "bump": {
+        "pass": 0,
+        "total": 954
+      },
+      "round-trip": {
+        "pass": 0,
+        "total": 318
+      }
+    },
+    "differential_pct": 7.05,
+    "spec_precedence_chain": false,
+    "degenerate_rejector": true,
+    "quality": {
+      "unsafe_blocks": 0,
+      "clone_calls": 0,
+      "to_owned_calls": 0,
+      "todo_macros": 6,
+      "panic_macros": 0,
+      "unwrap_calls": 0,
+      "lines": 33,
+      "extra_dependencies": 0
+    },
+    "violations": [
+      "todo_macros"
+    ],
+    "cargo_test_ok": true
+  },
+  "sha256": "0910b45f0477ba5e6bd786f3608f74fa2eea646baa08bcd160cdc60b34743047"
+}

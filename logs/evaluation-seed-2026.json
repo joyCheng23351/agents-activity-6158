@@ -1,0 +1,44 @@
+{
+  "seed": 2026,
+  "build": true,
+  "cargo_test": {
+    "passed": 21,
+    "failed": 0
+  },
+  "differential": {
+    "parse valid": {
+      "pass": 1017,
+      "total": 1018
+    },
+    "parse invalid": {
+      "pass": 521,
+      "total": 521
+    },
+    "compare": {
+      "pass": 2060,
+      "total": 2064
+    },
+    "bump": {
+      "pass": 3051,
+      "total": 3054
+    },
+    "round-trip": {
+      "pass": 1017,
+      "total": 1018
+    }
+  },
+  "differential_pct": 99.88,
+  "spec_precedence_chain": true,
+  "degenerate_rejector": false,
+  "quality": {
+    "unsafe_blocks": 0,
+    "clone_calls": 0,
+    "to_owned_calls": 0,
+    "todo_macros": 0,
+    "panic_macros": 0,
+    "unwrap_calls": 0,
+    "lines": 356,
+    "extra_dependencies": 0
+  },
+  "violations": []
+}
